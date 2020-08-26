@@ -2,23 +2,25 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Servermore.Server
 {
     public class Program
     {
-        private static IHost Server;
-        private static string[] Args;
+        private static IHost _server;
+        private static string[] _args;
 
         public static async Task Main(string[] args)
         {
-            Args = args;
+            _args = args;
             //TODO have this check a directory for changes?
-            Server = CreateHostBuilder(args).Build();
-            await Server.StartAsync();
+            _server = CreateHostBuilder(args).Build();
+            await _server.StartAsync();
 
-            MonitorDirectory("F:\\lab\\Servermore\\Servermore.Server\\bin\\loadcation");
+            MonitorDirectory(_server.Services.GetRequiredService<IConfiguration>().GetValue<string>("FunctionLoader:FunctionDirectory"));
 
             Process.GetCurrentProcess().WaitForExit();
         }
@@ -36,9 +38,9 @@ namespace Servermore.Server
 
             static async Task RestartServer()
             {
-                await Server.StopAsync();
-                Server = CreateHostBuilder(Args).Build();
-                await Server.StartAsync();
+                await _server.StopAsync();
+                _server = CreateHostBuilder(_args).Build();
+                await _server.StartAsync();
             }
         }
 
