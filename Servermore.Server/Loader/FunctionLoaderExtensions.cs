@@ -44,7 +44,7 @@ namespace Servermore.Server.Loader
 
             foreach (var dll in dlls)
             {
-                Console.WriteLine($"Loading commands from: {dll}");
+                Console.WriteLine($"Loading functions from: {dll}");
                 var loadContext = new FunctionLoadContext(dll);
                 list.Add(loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(dll))));
             }
