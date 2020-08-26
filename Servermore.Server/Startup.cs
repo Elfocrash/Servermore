@@ -28,6 +28,23 @@ namespace Servermore.Server
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            FunctionLoaderExtensions.LoadedAssemblies = LoadFunctionAssemblies(configuration.GetValue<string>("FunctionLoader:FunctionDirectory"));
+        }
+
+        private static List<Assembly> LoadFunctionAssemblies(string rootPath)
+        {
+            var list = new List<Assembly>();
+
+            var dlls = Directory.EnumerateFiles(rootPath, "*.dll", SearchOption.AllDirectories);
+
+            foreach (var dll in dlls)
+            {
+                Console.WriteLine($"Loading functions from: {dll}");
+                var loader = new FunctionLoadContext(dll);
+                list.Add(loader.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(dll))));
+            }
+
+            return list;
         }
 
         public IConfiguration Configuration { get; }
@@ -36,6 +53,7 @@ namespace Servermore.Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IFunctionLogger, FunctionLogger>();
+            services.AddServermore(Configuration.GetValue<string>("FunctionLoader:FunctionDirectory"));
             services.AddControllers();
         }
 

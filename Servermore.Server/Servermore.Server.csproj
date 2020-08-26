@@ -7,6 +7,4 @@
     <ItemGroup>
       <ProjectReference Include="..\Servermore.Sdk\Servermore.Sdk.csproj" />
     </ItemGroup>
-
-
 </Project>

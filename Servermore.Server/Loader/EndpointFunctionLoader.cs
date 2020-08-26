@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Servermore.Contracts;
 
 namespace Servermore.Server.Loader
@@ -16,7 +17,7 @@ namespace Servermore.Server.Loader
     public class EndpointFunctionLoader
     {
         public static void Load(IApplicationBuilder applicationBuilder, List<MethodInfo> functionAttributeMethods,
-            object activatedClass)
+            Type functionClassType)
         {
             var endpointFunctionMethods =
                 functionAttributeMethods.Where(x => x.GetCustomAttribute<EndpointFunctionAttribute>() != null).ToList();
@@ -32,12 +33,14 @@ namespace Servermore.Server.Loader
                 {
                     builder.Run(async context =>
                     {
+
+                        var activatedFunctionClass =  ActivatorUtilities.CreateInstance(applicationBuilder.ApplicationServices, functionClassType);
                         var response = endpointFunctionMethod.GetParameters().Length switch
                         {
-                            0 => await InvokeFunctionAppropriately(shouldAwaitMethod, endpointFunctionMethod, null),
+                            0 => await InvokeFunctionAppropriately(activatedFunctionClass, shouldAwaitMethod, endpointFunctionMethod, null),
                             //TODO expand on this with more types
                             1 when endpointFunctionMethod.GetParameters()[0].ParameterType == typeof(HttpContext) =>
-                                await InvokeFunctionAppropriately(shouldAwaitMethod, endpointFunctionMethod, new[] {context}),
+                                await InvokeFunctionAppropriately(activatedFunctionClass, shouldAwaitMethod, endpointFunctionMethod, new[] {context}),
                             _ => null
                         };
 
@@ -56,11 +59,11 @@ namespace Servermore.Server.Loader
                 });
             }
 
-            async Task<object> InvokeFunctionAppropriately(bool shouldAwaitMethod, MethodInfo endpointFunctionMethod, object?[] parameters)
+            async Task<object> InvokeFunctionAppropriately(object functionClassInstance, bool shouldAwaitMethod, MethodInfo endpointFunctionMethod, object?[] parameters)
             {
                 return shouldAwaitMethod
-                    ? await ((dynamic) endpointFunctionMethod.Invoke(activatedClass, parameters))!
-                    : endpointFunctionMethod.Invoke(activatedClass, parameters);
+                    ? await ((dynamic) endpointFunctionMethod.Invoke(functionClassInstance, parameters))!
+                    : endpointFunctionMethod.Invoke(functionClassInstance, parameters);
             }
         }
 

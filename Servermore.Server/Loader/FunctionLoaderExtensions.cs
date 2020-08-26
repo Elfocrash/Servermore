@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,11 +13,11 @@ namespace Servermore.Server.Loader
 {
     public static class FunctionLoaderExtensions
     {
+        public static List<Assembly> LoadedAssemblies = new List<Assembly>();
+
         public static IApplicationBuilder UseServermore(this IApplicationBuilder applicationBuilder, IConfiguration configuration)
         {
-            var ass = LoadPlugin(configuration.GetValue<string>("FunctionLoader:FunctionDirectory"));
-
-            var exportedTypes = ass.SelectMany(x => x.ExportedTypes).ToList();
+            var exportedTypes = LoadedAssemblies.SelectMany(x => x.ExportedTypes).ToList();
 
             foreach (var exportedType in exportedTypes)
             {
@@ -29,27 +30,35 @@ namespace Servermore.Server.Loader
                     continue;
                 }
 
-                var activatedClass = ActivatorUtilities.CreateInstance(applicationBuilder.ApplicationServices, exportedType);
-
-                EndpointFunctionLoader.Load(applicationBuilder, functionAttributeMethods, activatedClass);
+                EndpointFunctionLoader.Load(applicationBuilder, functionAttributeMethods, exportedType);
             }
             return applicationBuilder;
         }
 
-        private static List<Assembly> LoadPlugin(string rootPath)
+        public static IServiceCollection AddServermore(this IServiceCollection services, string functionLoadPath)
         {
-            var list = new List<Assembly>();
+            var exportedTypes = LoadedAssemblies.SelectMany(x => x.ExportedTypes).ToList();
 
-            var dlls = Directory.EnumerateFiles(rootPath, "*.dll", SearchOption.AllDirectories);
-
-            foreach (var dll in dlls)
+            foreach (var exportedType in exportedTypes)
             {
-                Console.WriteLine($"Loading functions from: {dll}");
-                var loadContext = new FunctionLoadContext(dll);
-                list.Add(loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(dll))));
+                ConfigureFunctionServices(services, exportedType);
             }
 
-            return list;
+            return services;
+        }
+
+        private static void ConfigureFunctionServices(IServiceCollection services, Type exportedType)
+        {
+            var serviceConfigurationMethods = exportedType.GetMethods()
+                .Where(x => x.GetCustomAttribute<FunctionServiceConfigurationAttribute>() != null && x.IsStatic)
+                .ToList();
+
+            if (serviceConfigurationMethods.Count == 0)
+            {
+                return;
+            }
+
+            serviceConfigurationMethods.ForEach(info => { info.Invoke(null, new [] {services}); });
         }
     }
 }
