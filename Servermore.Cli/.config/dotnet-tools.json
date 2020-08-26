@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "servermore.cli": {
+      "version": "1.0.0",
+      "commands": [
+        "servermore"
+      ]
+    }
+  }
+}
