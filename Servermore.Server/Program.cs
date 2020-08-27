@@ -1,5 +1,9 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -32,17 +36,21 @@ namespace Servermore.Server
         {
             var fileSystemWatcher = new FileSystemWatcher
             {
-                Path = path
+                Path = path,
+                IncludeSubdirectories = true
             };
             fileSystemWatcher.Created += async (sender, args) => { await RestartServer(); };
             fileSystemWatcher.Deleted += async (sender, args) => { await RestartServer(); };
-            fileSystemWatcher.EnableRaisingEvents = true;
+            fileSystemWatcher.EnableRaisingEvents = false;
 
             static async Task RestartServer()
             {
                 await FunctionRunnerHost.StopAsync();
                 await FunctionRunnerHost.WaitForShutdownAsync();
-                FunctionRunnerHost.Dispose();
+                // while (!ArePortsAvailable(5000, 5001))
+                // {
+                //     await Task.Delay(500);
+                // }
                 FunctionRunnerHost = CreateServerHostBuilder(Args).Build();
                 await FunctionRunnerHost.StartAsync();
             }
@@ -62,5 +70,33 @@ namespace Servermore.Server
                     webBuilder.UseStartup<OrchestratorStartup>()
                         .UseUrls("https://localhost:5300");
                 });
+
+
+        public static bool ArePortsAvailable(params int[] ports)
+        {
+            var portsToCheck = ports.ToList();
+
+            IPEndPoint[] endPoints;
+            var portArray = new List<int>();
+
+            var properties = IPGlobalProperties.GetIPGlobalProperties();
+
+            if (properties.GetActiveTcpConnections().Any(x => portsToCheck.Contains(x.LocalEndPoint.Port)))
+            {
+                return false;
+            }
+
+            if (properties.GetActiveTcpListeners().Any(x => portsToCheck.Contains(x.Port)))
+            {
+                return false;
+            }
+
+            if (properties.GetActiveUdpListeners().Any(x => portsToCheck.Contains(x.Port)))
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

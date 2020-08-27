@@ -19,6 +19,22 @@ namespace Servermore.ApiSample
             _metrics = metrics;
         }
 
+        [EndpointFunction("TestingServiceLifetime", "api/metric")]
+        public Task<IActionResult> GetMetric()
+        {
+            _metrics.Increment("Test");
+            return Task.FromResult<IActionResult>(new OkObjectResult(new
+            {
+                MetricVal = $"Test metric: {_metrics.GetValue("Test")}"
+            }));
+        }
+
+        [FunctionServiceConfiguration]
+        public static void ConfigureServices(IServiceCollection services)
+        {
+            services.AddSingleton<IMetricsCollector, MetricsCollector>();
+        }
+
         [EndpointFunction("SimpleGetEndpoint", "api/test")]
         public async Task<IActionResult> GetEndpointTest()
         {
@@ -33,24 +49,11 @@ namespace Servermore.ApiSample
             return new OkObjectResult(new { Text = $"Did this {opt.Value}?"});
         }
 
-        [EndpointFunction("TestingServiceLifetime", "api/metric")]
-        public async Task<IActionResult> GetMetric()
-        {
-            _metrics.Increment("Test");
-            return new OkObjectResult(new { MetricVal = $"Test metric: {_metrics.GetValue("Test")}"});
-        }
-
         [EndpointFunction("SimpleGetEndpoint2", "api/test2")]
         public async Task<IActionResult> GetEndpointTest2(HttpContext httpContext)
         {
             _logger.Log($"Endpoint called with query string {httpContext.Request.QueryString}");
             return new OkObjectResult(new { Text = $"Did this work? {httpContext.Request.QueryString}"});
-        }
-
-        [FunctionServiceConfiguration]
-        public static void ConfigureServices(IServiceCollection services)
-        {
-            services.AddSingleton<IMetricsCollector, MetricsCollector>();
         }
     }
 }

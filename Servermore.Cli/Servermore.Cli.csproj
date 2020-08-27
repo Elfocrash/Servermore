@@ -2,6 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
+        <Version>1.0.2</Version>
         <TargetFramework>netcoreapp3.1</TargetFramework>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>servermore</ToolCommandName>

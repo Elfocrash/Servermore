@@ -14,9 +14,11 @@ namespace Servermore.Server.Loader
     public static class FunctionLoaderExtensions
     {
         public static List<Assembly> LoadedAssemblies = new List<Assembly>();
+        public static List<MethodInfo> LoadedFunctionMethods = new List<MethodInfo>();
 
         public static IApplicationBuilder UseServermore(this IApplicationBuilder applicationBuilder, IConfiguration configuration)
         {
+            LoadedFunctionMethods = new List<MethodInfo>();
             var exportedTypes = LoadedAssemblies.SelectMany(x => x.ExportedTypes).ToList();
 
             foreach (var exportedType in exportedTypes)
@@ -29,6 +31,8 @@ namespace Servermore.Server.Loader
                 {
                     continue;
                 }
+
+                LoadedFunctionMethods.AddRange(functionAttributeMethods);
 
                 EndpointFunctionLoader.Load(applicationBuilder, functionAttributeMethods, exportedType);
             }
