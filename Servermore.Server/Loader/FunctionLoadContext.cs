@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -16,7 +17,13 @@ namespace Servermore.Server.Loader
         protected override Assembly Load(AssemblyName assemblyName)
         {
             var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
-            return assemblyPath != null ? LoadFromAssemblyPath(assemblyPath) : null;
+            if (assemblyPath == null)
+            {
+                return null;
+            };
+
+            using var fileStream = File.OpenRead(assemblyPath);
+            return LoadFromStream(fileStream);
         }
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)

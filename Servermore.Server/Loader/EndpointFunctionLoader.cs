@@ -33,7 +33,6 @@ namespace Servermore.Server.Loader
                 {
                     builder.Run(async context =>
                     {
-
                         var activatedFunctionClass =  ActivatorUtilities.CreateInstance(applicationBuilder.ApplicationServices, functionClassType);
                         var response = endpointFunctionMethod.GetParameters().Length switch
                         {

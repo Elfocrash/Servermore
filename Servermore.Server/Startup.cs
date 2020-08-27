@@ -1,23 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Servermore.Contracts;
 using Servermore.Sdk;
 using Servermore.Server.Loader;
 
@@ -54,7 +43,7 @@ namespace Servermore.Server
         {
             services.AddSingleton<IFunctionLogger, FunctionLogger>();
             services.AddServermore(Configuration.GetValue<string>("FunctionLoader:FunctionDirectory"));
-            services.AddControllers();
+            services.AddMvcCore();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,13 +55,6 @@ namespace Servermore.Server
             }
 
             app.UseHttpsRedirection();
-
-            app.UseRouting();
-
-            app.UseAuthorization();
-
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-
             app.UseServermore(Configuration);
         }
     }
